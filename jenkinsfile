@@ -1,0 +1,43 @@
+pipeline{
+    agent any
+    tools{
+        maven 'maven'
+    }
+    stages{
+        stage('Build maven'){
+            steps{
+                checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[credentialsId: 'jen-doc-git', url: 'https://github.com/karthikramv/jenkins_project.git']])
+                sh 'mvn clean install'
+            }
+        }
+        stage('Checkout GitHub'){
+            steps{
+                git branch: 'main', credentialsId: 'jen-doc-git', url: 'https://github.com/karthikramv/jenkins_project.git'
+            }
+        }
+	stage('Build Docker image'){
+	    steps{
+		script{
+		   sh 'docker build -t karthikvram/jenkins-project .'
+		} 
+	    }
+	}
+	stage('pudh to Hub'){
+		steps{
+			script{
+				withCredentials([usernameColonPassword(credentialsId: 'dock_hub_pass', variable: 'dock_hub_pass')]) {
+    				sh 'docker login -u karthikvram -p ${dock_hub_pass}'
+}	
+				sh 'docker push karthikvram/jenkins-project'
+			
+			}
+		}
+	}
+    }
+}
+
+
+
+
+
+
